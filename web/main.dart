@@ -21,21 +21,41 @@ CanvasElement canvas;
 CanvasRenderingContext2D ctx;
 
 const int PARTICLE_SIZE = 10;
+const int WIDTH = 640;
+const int HEIGHT = 480;
+
+Random RNG = new Random();
 
 void main() {
   canvas = querySelector('#canvas');
   ctx = canvas.getContext('2d');
 
-  var particle = new Particle(new Point(10, 10), 'salmon');
-
+  GameLoopHtmlState initial_state = new InitialState(10);
   GameLoopHtml gameLoop = new GameLoopHtml(canvas);
-  gameLoop.onUpdate = ((gameLoop) {
-    particle.updatePosition(new Point(1, 1));
-  });
-  gameLoop.onRender = ((gameLoop) {
-    particle.draw();
-  });
+  gameLoop.state = initial_state;
   gameLoop.start();
+}
+
+Point randomizePoint(Point point) {
+    int threshold = 50;
+    return new Point(point.x + RNG.nextInt(threshold) - threshold / 2, point.y + RNG.nextInt(threshold) - threshold / 2);
+}
+
+class InitialState extends SimpleHtmlState {
+  List<Particle> particles;
+
+  InitialState(int numParticles) {
+    this.particles = new List.generate(numParticles, (e) => new Particle(randomizePoint(new Point(WIDTH / 2, HEIGHT)), 'salmon'));
+  }
+
+  void onRender(GameLoop gameLoop) {
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    particles.forEach((particle) => particle.draw());
+  }
+
+  void onUpdate(GameLoop gameLoop) {
+    particles.forEach((particle) => particle.updatePosition(new Point(-1, -1)));
+  }
 }
 
 class Particle {
@@ -57,11 +77,13 @@ class Particle {
       ..fillStyle = this.color
       ..strokeStyle = 'white';
 
-    final int x = this.position.x * PARTICLE_SIZE;
-    final int y = this.position.y * PARTICLE_SIZE;
+    final int x = this.position.x - PARTICLE_SIZE / 2;
+    final int y = this.position.y - PARTICLE_SIZE / 2;
 
     ctx
       ..fillRect(x, y, PARTICLE_SIZE, PARTICLE_SIZE)
       ..strokeRect(x, y, PARTICLE_SIZE, PARTICLE_SIZE);
   }
+
+  String toString() => 'Particle at ($this.x, $this.y)';
 }
