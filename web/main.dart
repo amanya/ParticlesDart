@@ -45,7 +45,13 @@ class InitialState extends SimpleHtmlState {
   List<Particle> particles;
 
   InitialState(int numParticles) {
-    this.particles = new List.generate(numParticles, (e) => new Particle(randomizePoint(new Point(WIDTH / 2, HEIGHT)), 'salmon'));
+    this.particles = new List.generate(numParticles, (e) =>
+      new Particle(
+        randomizePoint(new Point(WIDTH / 2, HEIGHT / 2)),
+        new Point(RNG.nextDouble() * 1 - 0.5, -2.5),
+        'salmon'
+      )
+    );
   }
 
   void onRender(GameLoop gameLoop) {
@@ -54,18 +60,24 @@ class InitialState extends SimpleHtmlState {
   }
 
   void onUpdate(GameLoop gameLoop) {
-    particles.forEach((particle) => particle.updatePosition(new Point(-1, -1)));
+    particles.forEach((particle) => particle.updatePosition());
   }
 }
 
 class Particle {
+  static const double GRAVITY = 0.02;
   Point position;
+  Point speed;
   String color;
 
-  Particle(this.position, this.color);
+  Particle(this.position, this.speed, this.color);
 
-  void updatePosition(Point delta) {
+  void updatePosition() {
+    double y = this.speed.y;
+    double x = this.speed.x;
+    Point delta = new Point(x, y);
     this.position += delta;
+    this.speed = new Point(this.speed.x, this.speed.y + GRAVITY);
   }
 
   void updateColor(String color) {
@@ -85,5 +97,5 @@ class Particle {
       ..strokeRect(x, y, PARTICLE_SIZE, PARTICLE_SIZE);
   }
 
-  String toString() => 'Particle at ($this.x, $this.y)';
+  String toString() => 'Particle at (${this.position})';
 }
