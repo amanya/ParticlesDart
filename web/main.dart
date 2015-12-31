@@ -66,6 +66,8 @@ class InitialState extends SimpleHtmlState {
 
 class Particle {
   static const double GRAVITY = 0.02;
+  static const double easing = 0.99;
+  double size = PARTICLE_SIZE;
   Point position;
   Point speed;
   String color;
@@ -78,6 +80,7 @@ class Particle {
     Point delta = new Point(x, y);
     this.position += delta;
     this.speed = new Point(this.speed.x, this.speed.y + GRAVITY);
+    this.size *= easing;
   }
 
   void updateColor(String color) {
@@ -89,12 +92,12 @@ class Particle {
       ..fillStyle = this.color
       ..strokeStyle = 'white';
 
-    final int x = this.position.x - PARTICLE_SIZE / 2;
-    final int y = this.position.y - PARTICLE_SIZE / 2;
+    final int x = this.position.x - this.size / 2;
+    final int y = this.position.y - this.size / 2;
 
     ctx
-      ..fillRect(x, y, PARTICLE_SIZE, PARTICLE_SIZE)
-      ..strokeRect(x, y, PARTICLE_SIZE, PARTICLE_SIZE);
+      ..fillRect(x, y, this.size, this.size)
+      ..strokeRect(x, y, this.size, this.size);
   }
 
   String toString() => 'Particle at (${this.position})';
