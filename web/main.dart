@@ -30,7 +30,7 @@ void main() {
   canvas = querySelector('#canvas');
   ctx = canvas.getContext('2d');
 
-  GameLoopHtmlState initial_state = new InitialState(10);
+  GameLoopHtmlState initial_state = new InitialState(100);
   GameLoopHtml gameLoop = new GameLoopHtml(canvas);
   gameLoop.state = initial_state;
   gameLoop.start();
@@ -59,7 +59,7 @@ class InitialState extends SimpleHtmlState {
     this.particles = new List.generate(
         numParticles,
         (e) => new Particle(randomizePoint(new Point(WIDTH / 2, HEIGHT / 2)),
-            new Point(RNG.nextDouble() * 1 - 0.5, -2.5), 'salmon'));
+            new Point(RNG.nextDouble() * 10 - 5, -20), 'salmon'));
   }
 
   void onRender(GameLoop gameLoop) {
@@ -77,7 +77,7 @@ class InitialState extends SimpleHtmlState {
 }
 
 class Particle {
-  static const double GRAVITY = 0.02;
+  static const double GRAVITY = 0.98;
   static const double easing = 0.99;
   double size = PARTICLE_SIZE;
   Point position;
@@ -91,7 +91,12 @@ class Particle {
     double x = this.speed.x;
     Point delta = new Point(x, y);
     this.position += delta;
-    this.speed = new Point(this.speed.x, this.speed.y + GRAVITY);
+    if(this.position.y >= HEIGHT - this.size) {
+      this.position = new Point(this.position.x, HEIGHT - this.size);
+      this.speed = new Point(0, 0);
+    } else {
+      this.speed = new Point(this.speed.x, this.speed.y + GRAVITY);
+    }
     this.size *= easing;
   }
 
