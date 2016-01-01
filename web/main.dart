@@ -21,6 +21,7 @@ CanvasElement canvas;
 CanvasRenderingContext2D ctx;
 
 const double PARTICLE_SIZE = 10.0;
+const String PARTICLE_COLOR = 'salmon';
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
@@ -30,7 +31,7 @@ void main() {
   canvas = querySelector('#canvas');
   ctx = canvas.getContext('2d');
 
-  GameLoopHtmlState initial_state = new InitialState(100);
+  GameLoopHtmlState initial_state = new InitialState(1000);
   GameLoopHtml gameLoop = new GameLoopHtml(canvas);
   gameLoop.state = initial_state;
   gameLoop.start();
@@ -46,21 +47,11 @@ void drawText(CanvasRenderingContext2D ctx, String text, Point position) {
     ..fillText(text, position.x, position.y);
 }
 
-Point randomizePoint(Point point) {
-  int threshold = 50;
-  return new Point(point.x + RNG.nextInt(threshold) - threshold / 2,
-      point.y + RNG.nextInt(threshold) - threshold / 2);
-}
-
 class InitialState extends SimpleHtmlState {
-  List<Particle> particles;
+  final int maxParticles;
+  List<Particle> particles = [];
 
-  InitialState(int numParticles) {
-    particles = new List.generate(
-        numParticles,
-        (e) => new Particle(randomizePoint(new Point(WIDTH / 2, HEIGHT / 2)),
-            new Point(RNG.nextDouble() * 10 - 5, -20), 'salmon'));
-  }
+  InitialState(this.maxParticles);
 
   void onRender(GameLoop gameLoop) {
     ctx
@@ -72,6 +63,9 @@ class InitialState extends SimpleHtmlState {
   }
 
   void onUpdate(GameLoop gameLoop) {
+    if(particles.length < maxParticles) {
+      particles.add(new Particle.randomInitialize());
+    }
     particles.forEach((particle) => particle.updatePosition());
   }
 }
@@ -85,6 +79,23 @@ class Particle {
   String color;
 
   Particle(this.position, this.speed, this.color);
+  Particle.randomInitialize() {
+    _initialSetup();
+  }
+
+  void _initialSetup() {
+    size = PARTICLE_SIZE;
+    position = _randomizePoint(new Point(WIDTH / 2, HEIGHT - size), 30);
+    speed = _randomizePoint(new Point(RNG.nextDouble() * 10 - 5, -20), 3);
+    color = PARTICLE_COLOR;
+  }
+
+  Point _randomizePoint(Point point, int threshold) {
+    return new Point(point.x + RNG.nextInt(threshold) - threshold / 2,
+        point.y + RNG.nextInt(threshold) - threshold / 2);
+  }
+
+
 
   void updatePosition() {
     double y = speed.y;
@@ -98,6 +109,9 @@ class Particle {
       speed = new Point(speed.x, speed.y + GRAVITY);
     }
     size *= easing;
+    if(size <= 1) {
+      _initialSetup();
+    }
   }
 
   void updateColor(String color) {
