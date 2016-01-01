@@ -56,7 +56,7 @@ class InitialState extends SimpleHtmlState {
   List<Particle> particles;
 
   InitialState(int numParticles) {
-    this.particles = new List.generate(
+    particles = new List.generate(
         numParticles,
         (e) => new Particle(randomizePoint(new Point(WIDTH / 2, HEIGHT / 2)),
             new Point(RNG.nextDouble() * 10 - 5, -20), 'salmon'));
@@ -64,7 +64,7 @@ class InitialState extends SimpleHtmlState {
 
   void onRender(GameLoop gameLoop) {
     ctx
-      ..fillStyle = "rgba(0,0,0,0.2)"
+      ..fillStyle = "rgb(0,0,0)"
       ..fillRect(0, 0, WIDTH, HEIGHT);
     particles.forEach((particle) => particle.draw());
     double fps = 1 / gameLoop.dt;
@@ -78,7 +78,7 @@ class InitialState extends SimpleHtmlState {
 
 class Particle {
   static const double GRAVITY = 0.98;
-  static const double easing = 0.99;
+  static const double easing = 0.98;
   double size = PARTICLE_SIZE;
   Point position;
   Point speed;
@@ -87,17 +87,17 @@ class Particle {
   Particle(this.position, this.speed, this.color);
 
   void updatePosition() {
-    double y = this.speed.y;
-    double x = this.speed.x;
+    double y = speed.y;
+    double x = speed.x;
     Point delta = new Point(x, y);
-    this.position += delta;
-    if(this.position.y >= HEIGHT - this.size) {
-      this.position = new Point(this.position.x, HEIGHT - this.size);
-      this.speed = new Point(0, 0);
+    position += delta;
+    if(position.y >= HEIGHT - size) {
+      position = new Point(position.x, HEIGHT - size);
+      speed = new Point(0, 0);
     } else {
-      this.speed = new Point(this.speed.x, this.speed.y + GRAVITY);
+      speed = new Point(speed.x, speed.y + GRAVITY);
     }
-    this.size *= easing;
+    size *= easing;
   }
 
   void updateColor(String color) {
@@ -106,17 +106,17 @@ class Particle {
 
   void draw() {
     ctx
-      ..fillStyle = this.color
+      ..fillStyle = color
       ..lineWidth = 1
       ..strokeStyle = 'black';
 
-    final int x = this.position.x - this.size / 2;
-    final int y = this.position.y - this.size / 2;
+    final int x = position.x - size / 2;
+    final int y = position.y - size / 2;
 
     ctx
-      ..fillRect(x, y, this.size, this.size)
-      ..strokeRect(x, y, this.size, this.size);
+      ..fillRect(x, y, size, size)
+      ..strokeRect(x, y, size, size);
   }
 
-  String toString() => 'Particle at (${this.position})';
+  String toString() => 'Particle at (${position})';
 }
