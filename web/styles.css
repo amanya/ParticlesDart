@@ -14,3 +14,7 @@ html, body {
     margin: auto;
     border: solid thin black;
 }
+
+#canvas {
+    background: black;
+}
