@@ -20,7 +20,7 @@ import 'package:game_loop/game_loop_html.dart';
 CanvasElement canvas;
 CanvasRenderingContext2D ctx;
 
-const int PARTICLE_SIZE = 10;
+const double PARTICLE_SIZE = 10.0;
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
@@ -36,27 +36,39 @@ void main() {
   gameLoop.start();
 }
 
+void drawText(CanvasRenderingContext2D ctx, String text, Point position) {
+  ctx
+    ..font = '14px sans-serif'
+    ..lineWidth = 3
+    ..strokeStyle = "black"
+    ..strokeText(text, position.x, position.y)
+    ..fillStyle = "white"
+    ..fillText(text, position.x, position.y);
+}
+
 Point randomizePoint(Point point) {
-    int threshold = 50;
-    return new Point(point.x + RNG.nextInt(threshold) - threshold / 2, point.y + RNG.nextInt(threshold) - threshold / 2);
+  int threshold = 50;
+  return new Point(point.x + RNG.nextInt(threshold) - threshold / 2,
+      point.y + RNG.nextInt(threshold) - threshold / 2);
 }
 
 class InitialState extends SimpleHtmlState {
   List<Particle> particles;
 
   InitialState(int numParticles) {
-    this.particles = new List.generate(numParticles, (e) =>
-      new Particle(
-        randomizePoint(new Point(WIDTH / 2, HEIGHT / 2)),
-        new Point(RNG.nextDouble() * 1 - 0.5, -2.5),
-        'salmon'
-      )
-    );
+    this.particles = new List.generate(
+        numParticles,
+        (e) => new Particle(randomizePoint(new Point(WIDTH / 2, HEIGHT / 2)),
+            new Point(RNG.nextDouble() * 1 - 0.5, -2.5), 'salmon'));
   }
 
   void onRender(GameLoop gameLoop) {
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    ctx
+      ..fillStyle = "rgba(0,0,0,0.2)"
+      ..fillRect(0, 0, WIDTH, HEIGHT);
     particles.forEach((particle) => particle.draw());
+    double fps = 1 / gameLoop.dt;
+    drawText(ctx, 'FPS: ${fps.round()}', new Point(20, 20));
   }
 
   void onUpdate(GameLoop gameLoop) {
@@ -90,7 +102,8 @@ class Particle {
   void draw() {
     ctx
       ..fillStyle = this.color
-      ..strokeStyle = 'white';
+      ..lineWidth = 1
+      ..strokeStyle = 'black';
 
     final int x = this.position.x - this.size / 2;
     final int y = this.position.y - this.size / 2;
