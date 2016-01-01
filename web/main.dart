@@ -20,7 +20,7 @@ import 'package:game_loop/game_loop_html.dart';
 CanvasElement canvas;
 CanvasRenderingContext2D ctx;
 
-const double PARTICLE_SIZE = 10.0;
+const double PARTICLE_SIZE = 10;
 const int WIDTH = 640;
 const int HEIGHT = 480;
 const List<String> COLORS = const ['red', 'orange'];
@@ -31,7 +31,7 @@ void main() {
   canvas = querySelector('#canvas');
   ctx = canvas.getContext('2d');
 
-  GameLoopHtmlState initial_state = new InitialState(100);
+  GameLoopHtmlState initial_state = new InitialState(20);
   GameLoopHtml gameLoop = new GameLoopHtml(canvas);
   gameLoop.state = initial_state;
   gameLoop.start();
@@ -50,21 +50,25 @@ void drawText(CanvasRenderingContext2D ctx, String text, Point position) {
 class InitialState extends SimpleHtmlState {
   final int numParticles;
   List<Particle> particles;
+  int angle = 0;
+  Point center;
 
   InitialState(this.numParticles) {
     int x = WIDTH / 2 - PARTICLE_SIZE / 2;
     int y = HEIGHT / 2 - PARTICLE_SIZE / 2;
+    center = new Point(x, y);
+    int interval = 2 * PI / numParticles;
     particles = new List.generate(
         numParticles,
         (n) => new Particle(
-          new Point(x, y),
-          new Point(cos(3.6 * n) * 2, sin(3.6 * n) * 2),
-          COLORS[RNG.nextInt(COLORS.length)]));
+            new Point(x + cos(interval * n) * 100, y + sin(interval * n) * 100),
+            new Point(0, 0),
+            COLORS[0]));
   }
 
   void onRender(GameLoop gameLoop) {
     ctx
-      ..fillStyle = "rgba(0,0,0,0.2)"
+      ..fillStyle = "rgb(0,0,0)"
       ..fillRect(0, 0, WIDTH, HEIGHT);
     particles.forEach((particle) => particle.draw());
     double fps = 1 / gameLoop.dt;
@@ -75,7 +79,24 @@ class InitialState extends SimpleHtmlState {
     if (particles.length < numParticles) {
       particles.add(new Particle.randomInitialize());
     }
-    particles.forEach((particle) => particle.updatePosition());
+    angle += .1;
+    if (angle >= 2 * PI) {
+      angle = 0;
+    }
+    center += new Point(0, sin(angle) * 5);
+    particles.forEach((particle) {
+      int xp = 0;
+      int yp = sin(angle) * 5;
+      int x = particle.position.x - WIDTH / 2;
+      int y = particle.position.y - HEIGHT / 2;
+      y += yp;
+      double rotation = 0.05;
+      xp = x * cos(rotation) - y * sin(rotation);
+      yp = y * cos(rotation) + x * sin(rotation);
+      xp = xp + WIDTH / 2;
+      yp = yp + HEIGHT / 2;
+      particle.updatePosition(xp, yp);
+    });
   }
 }
 
@@ -96,7 +117,7 @@ class Particle {
     size = PARTICLE_SIZE;
     position = _randomizePoint(new Point(WIDTH / 2, HEIGHT - size), 30);
     speed = _randomizePoint(new Point(RNG.nextDouble() * 10 - 5, -20), 3);
-    color = COLORS[RNH.nextInt(COLORS.length)];
+    color = COLORS[0];
   }
 
   Point _randomizePoint(Point point, int threshold) {
@@ -104,18 +125,8 @@ class Particle {
         point.y + RNG.nextInt(threshold) - threshold / 2);
   }
 
-  void updatePosition() {
-    double y = speed.y;
-    double x = speed.x;
-    Point delta = new Point(x, y);
-    position += delta;
-    if (position.y >= HEIGHT - size) {
-      position = new Point(position.x, HEIGHT - size);
-      speed = new Point(0, 0);
-    } else {
-      speed = new Point(speed.x, speed.y);
-    }
-    size *= easing;
+  void updatePosition(int dx, int dy) {
+    position = new Point(dx, dy + GRAVITY);
   }
 
   void updateColor(String color) {
