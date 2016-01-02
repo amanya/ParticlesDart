@@ -20,7 +20,7 @@ import 'package:game_loop/game_loop_html.dart';
 CanvasElement canvas;
 CanvasRenderingContext2D ctx;
 
-const double PARTICLE_SIZE = 10;
+const double PARTICLE_SIZE = 10.0;
 const List<String> COLORS = const ['red', 'orange'];
 
 Random RNG = new Random();
@@ -47,61 +47,74 @@ void drawText(CanvasRenderingContext2D ctx, String text, Point position) {
 
 class InitialState extends SimpleHtmlState {
   final int numParticles;
-  List<Particle> particles;
-  int angle = 0;
-  Point center;
+  List<List<Particle>> particles;
+  List<double> angles;
   int width;
   int height;
 
   InitialState(this.numParticles) {
+    _resizeCanvas();
+    double x = width / 2 - PARTICLE_SIZE / 2;
+    double y = height / 2 - PARTICLE_SIZE / 2;
+    int distance = 20;
+    double interval = PI / distance;
+    angles = new List.generate(distance, (n) => cos(interval * n));
+    particles = new List.generate(
+        20,
+        (n) => _genCircle(new Point(x + n * 5 * angles[n], y + n * 5), 150,
+            numParticles, _genColor(distance, n)));
+  }
+
+  String _genColor(int distance, int position) {
+    double d = (255 / distance) * position;
+    return 'rgb(${d.round()},0,0)';
+  }
+
+  List<Particle> _genCircle(
+      Point center, int radius, int numParticles, String color) {
+    double interval = 2 * PI / numParticles;
+    return new List.generate(
+        numParticles,
+        (n) => new Particle(
+            new Point(center.x + cos(interval * n) * radius,
+                center.y + sin(interval * n) * radius),
+            new Point(0, 0),
+            color));
+  }
+
+  void _resizeCanvas() {
     width = window.innerWidth;
     height = window.innerHeight;
     canvas.width = width;
     canvas.height = height;
-
-    int x = width / 2 - PARTICLE_SIZE / 2;
-    int y = height / 2 - PARTICLE_SIZE / 2;
-    center = new Point(x, y);
-    int interval = 2 * PI / numParticles;
-    particles = new List.generate(
-        numParticles,
-        (n) => new Particle(
-            new Point(x + cos(interval * n) * 100, y + sin(interval * n) * 100),
-            new Point(0, 0),
-            COLORS[0]));
   }
 
   void onRender(GameLoop gameLoop) {
     ctx
       ..fillStyle = "rgb(0,0,0)"
       ..fillRect(0, 0, width, height);
-    particles.forEach((particle) => particle.draw());
+    particles
+        .forEach((circle) => circle.forEach((particle) => particle.draw()));
     double fps = 1 / gameLoop.dt;
     drawText(ctx, 'FPS: ${fps.round()}', new Point(20, 20));
   }
 
   void onUpdate(GameLoop gameLoop) {
-    if (particles.length < numParticles) {
-      particles.add(new Particle.randomInitialize());
+    for (var n = 0; n < particles.length; n++) {
+      var angle = angles[n];
+      angle += .1;
+      if (angle >= 2 * PI) {
+        angle = 0;
+      }
+      angles[n] = angle;
+      particles[n].forEach((particle) {
+        double x = particle.position.x;
+        double y = particle.position.y;
+        double xp = x + cos(angle) * 5;
+        double yp = y + sin(angle) * 5;
+        particle.updatePosition(xp, yp);
+      });
     }
-    angle += .1;
-    if (angle >= 2 * PI) {
-      angle = 0;
-    }
-    center += new Point(0, sin(angle) * 5);
-    particles.forEach((particle) {
-      int xp = 0;
-      int yp = sin(angle) * 5;
-      int x = particle.position.x - width / 2;
-      int y = particle.position.y - height / 2;
-      y += yp;
-      double rotation = 0.05;
-      xp = x * cos(rotation) - y * sin(rotation);
-      yp = y * cos(rotation) + x * sin(rotation);
-      xp = xp + width / 2;
-      yp = yp + height / 2;
-      particle.updatePosition(xp, yp);
-    });
   }
 }
 
@@ -115,8 +128,8 @@ class Particle {
 
   Particle(this.position, this.speed, this.color);
 
-  void updatePosition(int dx, int dy) {
-    position = new Point(dx, dy + GRAVITY);
+  void updatePosition(double x, double y) {
+    position = new Point(x, y);
   }
 
   void draw() {
@@ -125,8 +138,8 @@ class Particle {
       ..lineWidth = 1
       ..strokeStyle = 'black';
 
-    final int x = position.x - size / 2;
-    final int y = position.y - size / 2;
+    final double x = position.x - size / 2;
+    final double y = position.y - size / 2;
 
     ctx
       ..fillRect(x, y, size, size)
