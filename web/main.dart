@@ -17,26 +17,24 @@ import 'dart:html';
 import 'dart:math';
 import 'package:game_loop/game_loop_html.dart';
 
-CanvasElement canvas;
-CanvasRenderingContext2D ctx;
-
 const double PARTICLE_SIZE = 10.0;
-const List<String> COLORS = const ['red', 'orange'];
 
 Random RNG = new Random();
 
 void main() {
-  canvas = querySelector('#canvas');
-  ctx = canvas.getContext('2d');
+  CanvasElement canvas = querySelector('#canvas');
+  CanvasRenderingContext2D canvasContext = canvas.getContext('2d');
 
-  GameLoopHtmlState initial_state = new InitialState(20);
+  resizeCanvas(canvas);
+
+  GameLoopHtmlState initial_state = new InitialState(canvas, canvasContext, 50);
   GameLoopHtml gameLoop = new GameLoopHtml(canvas);
   gameLoop.state = initial_state;
   gameLoop.start();
 }
 
-void drawText(CanvasRenderingContext2D ctx, String text, Point position) {
-  ctx
+void drawText(CanvasRenderingContext2D canvaContext, String text, Point position) {
+  canvaContext
     ..font = '14px sans-serif'
     ..lineWidth = 3
     ..strokeStyle = "black"
@@ -45,24 +43,29 @@ void drawText(CanvasRenderingContext2D ctx, String text, Point position) {
     ..fillText(text, position.x, position.y);
 }
 
+void resizeCanvas(CanvasElement canvas) {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
 class InitialState extends SimpleHtmlState {
+  final CanvasElement canvas;
+  final CanvasRenderingContext2D canvasContext;
   final int numParticles;
-  List<List<Particle>> particles;
+  List<Circle> _circles;
   List<double> angles;
   int width;
   int height;
 
-  InitialState(this.numParticles) {
-    _resizeCanvas();
+  InitialState(this.canvas, this.canvasContext, this.numParticles) {
+    width = canvas.width;
+    height = canvas.height;
     double x = width / 2 - PARTICLE_SIZE / 2;
     double y = height / 2 - PARTICLE_SIZE / 2;
     int distance = 20;
     double interval = PI / distance;
     angles = new List.generate(distance, (n) => cos(interval * n));
-    particles = new List.generate(
-        20,
-        (n) => _genCircle(new Point(x + n * 5 * angles[n], y + n * 5), 150,
-            numParticles, _genColor(distance, n)));
+    _circles = new List.generate(20, (n) => new Circle(new Point(x + n * 5 * angles[n], y + n * 5), 150, numParticles, _genColor(distance, n)));
   }
 
   String _genColor(int distance, int position) {
@@ -70,70 +73,74 @@ class InitialState extends SimpleHtmlState {
     return 'rgb(${d.round()},0,0)';
   }
 
-  List<Particle> _genCircle(
-      Point center, int radius, int numParticles, String color) {
-    double interval = 2 * PI / numParticles;
-    return new List.generate(
-        numParticles,
-        (n) => new Particle(
-            new Point(center.x + cos(interval * n) * radius,
-                center.y + sin(interval * n) * radius),
-            new Point(0, 0),
-            color));
-  }
-
-  void _resizeCanvas() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = width;
-    canvas.height = height;
+  void _clearCanvas() {
+    canvasContext
+      ..fillStyle = "rgb(0,0,0)"
+      ..fillRect(0, 0, width, height);
   }
 
   void onRender(GameLoop gameLoop) {
-    ctx
-      ..fillStyle = "rgb(0,0,0)"
-      ..fillRect(0, 0, width, height);
-    particles
-        .forEach((circle) => circle.forEach((particle) => particle.draw()));
+    _clearCanvas();
+    _circles.forEach((circle) => circle.draw(canvasContext));
     double fps = 1 / gameLoop.dt;
-    drawText(ctx, 'FPS: ${fps.round()}', new Point(20, 20));
+    drawText(canvasContext, 'FPS: ${fps.round()}', new Point(20, 20));
   }
 
   void onUpdate(GameLoop gameLoop) {
-    for (var n = 0; n < particles.length; n++) {
+    for (var n = 0; n < _circles.length; n++) {
       var angle = angles[n];
-      angle += .1;
+      angle += .07;
       if (angle >= 2 * PI) {
         angle = 0;
       }
       angles[n] = angle;
-      particles[n].forEach((particle) {
-        double x = particle.position.x;
-        double y = particle.position.y;
-        double xp = x + cos(angle) * 5;
-        double yp = y + sin(angle) * 5;
-        particle.updatePosition(xp, yp);
-      });
+      double xp = cos(angle) * 5;
+      double yp = sin(angle) * 5;
+      _circles[n].updatePosition(new Point(xp, yp));
     }
   }
 }
 
-class Particle {
-  static const double GRAVITY = 0.08;
-  static const double easing = 0.99;
-  double size = PARTICLE_SIZE;
-  Point position;
-  Point speed;
+class Circle {
+  Point center;
+  double radius;
+  int numParticles;
   String color;
 
-  Particle(this.position, this.speed, this.color);
+  List<Particle> _particles;
 
-  void updatePosition(double x, double y) {
-    position = new Point(x, y);
+  Circle(this.center, this.radius, this.numParticles, String color) {
+    double interval = 2 * PI / numParticles;
+    _particles = new List.generate(
+      numParticles,
+      (n) => new Particle(
+        new Point(center.x + cos(interval * n) * radius,
+                  center.y + sin(interval * n) * radius),
+                  color));
   }
 
-  void draw() {
-    ctx
+  void draw(CanvasRenderingContext2D canvaContext) {
+    _particles.forEach((particle) => particle.draw(canvaContext));
+  }
+
+  void updatePosition(Point delta) {
+    _particles.forEach((particle) => particle.updatePosition(delta));
+  }
+}
+
+class Particle {
+  double size = PARTICLE_SIZE;
+  Point position;
+  String color;
+
+  Particle(this.position, this.color);
+
+  void updatePosition(Point delta) {
+    position += delta;
+  }
+
+  void draw(CanvasRenderingContext2D canvasContext) {
+    canvasContext
       ..fillStyle = color
       ..lineWidth = 1
       ..strokeStyle = 'black';
@@ -141,7 +148,7 @@ class Particle {
     final double x = position.x - size / 2;
     final double y = position.y - size / 2;
 
-    ctx
+    canvasContext
       ..fillRect(x, y, size, size)
       ..strokeRect(x, y, size, size);
   }
