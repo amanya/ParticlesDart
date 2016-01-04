@@ -61,11 +61,11 @@ class InitialState extends SimpleHtmlState {
     width = canvas.width;
     height = canvas.height;
     double x = width / 2 - PARTICLE_SIZE / 2;
-    double y = height / 2 - PARTICLE_SIZE / 2;
-    int distance = 20;
-    double interval = PI / distance;
+    double y = height / 8 - PARTICLE_SIZE / 2;
+    int distance = 80;
+    double interval = 2 * PI / distance;
     angles = new List.generate(distance, (n) => cos(interval * n));
-    _circles = new List.generate(20, (n) => new Circle(new Point(x + n * 5 * angles[n], y + n * 5), 150, numParticles, _genColor(distance, n)));
+    _circles = new List.generate(distance, (n) => new Circle(new Point(x + n * 5 * angles[n], y + n * 5), 150, numParticles, _genColor(distance, n)));
   }
 
   String _genColor(int distance, int position) {
@@ -87,17 +87,7 @@ class InitialState extends SimpleHtmlState {
   }
 
   void onUpdate(GameLoop gameLoop) {
-    for (var n = 0; n < _circles.length; n++) {
-      var angle = angles[n];
-      angle += .07;
-      if (angle >= 2 * PI) {
-        angle = 0;
-      }
-      angles[n] = angle;
-      double xp = cos(angle) * 5;
-      double yp = sin(angle) * 5;
-      _circles[n].updatePosition(new Point(xp, yp));
-    }
+    _circles.forEach((circle) => circle.rotate(2 * PI / 360));
   }
 }
 
@@ -121,6 +111,15 @@ class Circle {
 
   void draw(CanvasRenderingContext2D canvaContext) {
     _particles.forEach((particle) => particle.draw(canvaContext));
+  }
+
+  void rotate(double angle) {
+    _particles.forEach((particle) {
+      Point pos = particle.position - center;
+      double xp = pos.x * cos(angle) - pos.y * sin(angle);
+      double yp = pos.y * cos(angle) + pos.x * sin(angle);
+      particle.position = new Point(xp, yp) + center;
+    });
   }
 
   void updatePosition(Point delta) {
